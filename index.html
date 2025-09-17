@@ -564,9 +564,16 @@
   </script>
 <script>
 const music = document.getElementById("bg-music");
+music.oncanplaythrough = () => console.log("✅ 音乐加载成功，可以播放");
+music.onerror = () => console.log("❌ 音乐加载失败，检查路径或文件名");
+
 function unlockAudio() {
   music.muted = false;
-  music.play().catch(()=>{});
+  music.play().then(()=>{
+    console.log("🎵 音乐开始播放");
+  }).catch(err=>{
+    console.log("⚠️ 播放失败:", err);
+  });
   document.removeEventListener("click", unlockAudio);
   document.removeEventListener("touchstart", unlockAudio);
 }
