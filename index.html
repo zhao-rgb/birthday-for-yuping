@@ -79,34 +79,21 @@
     #final-msg{font-size:2.4em;color:var(--pink2);font-weight:800;animation:glow 2s infinite alternate}
     @keyframes glow{from{text-shadow:0 0 8px #ff80ab}to{text-shadow:0 0 26px #c2185b}}
     #final-photo{width:260px;border-radius:14px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-  
-.heart {
-  display: inline-block;
-  color: red;
-  font-size: 22px;
-  animation: heartbeat 1s infinite;
-}
-
-@keyframes heartbeat {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.3); }
-  50% { transform: scale(1); }
-  75% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-</style>
+  </style>
 </head>
 <body>
 <!-- 音乐 -->
 <audio autoplay="autoplay" id="bg-music" loop="loop" muted="muted" style="display:none;">
 <source src="music.mp3" type="audio/mpeg"/>
 </audio>
+<audio id="s-catch" preload="auto" src="catch.mp3"></audio>
+<audio id="s-bomb" preload="auto" src="bomb.mp3"></audio>
 <!-- 星空背景 -->
 <canvas id="bg"></canvas>
 <!-- Stage1 找真心 -->
 <div class="stage" id="stage1">
 <h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
-<p>点中真正那颗【真心】才能继续 <span class="heart">❤️</span> （别点假心心哦）</p>
+<p>点中真正那颗「真心」才能继续 💖（别点假心心哦）</p>
 <div id="hearts"></div>
 </div>
 <!-- Stage2 接礼物 -->
@@ -172,6 +159,409 @@
 <p style="opacity:.9">轻点屏幕可再放一波烟花✨</p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script>
+    /* ========= 星空背景 ========= */
+    const bg = document.getElementById('bg'), bctx = bg.getContext('2d');
+    function fit(){ bg.width = innerWidth; bg.height = innerHeight }
+    fit(); addEventListener('resize', fit);
+    const stars = Array.from({length:120}).map(()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.5,vx:(Math.random()-.5)*.05}));
+    (function loop(){
+      bctx.clearRect(0,0,bg.width,bg.height); bctx.fillStyle='#fff';
+      stars.forEach(s=>{
+        bctx.globalAlpha=.9; bctx.beginPath(); bctx.arc(s.x,s.y,s.r,0,Math.PI*2); bctx.fill();
+        s.y+=.2; s.x+=s.vx; if(s.y>bg.height) s.y=0; if(s.x>bg.width) s.x=0; if(s.x<0) s.x=bg.width;
+      });
+      requestAnimationFrame(loop);
+    })();
+
+    // 移动端首次交互播放背景音乐
+    const music = document.getElementById('bg-music');
+    addEventListener('touchstart', ()=>{ if(music.paused) music.play().catch(()=>{}); }, {once:true});
+    addEventListener('click',      ()=>{ if(music.paused) music.play().catch(()=>{}); }, {once:true});
+
+    /* ========= 工具：舞台切换 ========= */
+    function switchStage(from,to){
+      document.getElementById('stage'+from).classList.add('hidden');
+      document.getElementById('stage'+to).classList.remove('hidden');
+    }
+
+    /* ========= Stage1：找真心 ========= */
+    (function initHearts(){
+      const root = document.getElementById('hearts'); const N = 12; const idx = Math.floor(Math.random()*N);
+      for(let i=0;i<N;i++){
+        const el = document.createElement('div'); el.className='heart'; el.textContent='💖';
+        el.style.left = (5 + Math.random()*90) + '%'; el.style.top = (10 + Math.random()*70) + '%';
+        if(i===idx) el.dataset.c='1'; root.appendChild(el);
+        el.addEventListener('click', ()=>{
+          if(el.dataset.c){ confetti({particleCount:60,spread:120,origin:{y:.5}}); switchStage(1,2); startCatchGame(); }
+          else{ el.style.transform='scale(.2) rotate(18deg)'; el.style.opacity='.25'; setTimeout(()=>el.remove(),600); }
+        });
+      }
+    })();
+
+    /* ========= Stage2：接礼物（带清理） ========= */
+    const sCatch = document.getElementById('s-catch'); const sBomb = document.getElementById('s-bomb');
+    const scoreEl = document.getElementById('score'); const timerBar = document.getElementById('timerBar'); const retryCatch = document.getElementById('retryCatch');
+    let __catch = {dropId:0,timerId:0,moveMouse:null,moveTouch:null,running:false};
+    function startCatchGame(){
+      stopCatchGame(); // 防御清理
+      __catch.running=true; scoreEl.textContent='0'; timerBar.style.width='100%'; retryCatch.style.display='none';
+      const stage2 = document.getElementById('stage2'); Array.from(stage2.querySelectorAll('.gift')).forEach(n=>n.remove());
+      const basket = document.getElementById('basket'); let bx = innerWidth/2 - 60; basket.style.left = bx+'px';
+
+      __catch.moveMouse = (e)=>{ bx = Math.min(Math.max(10, e.clientX - 60), innerWidth - 130); basket.style.left = bx+'px'; };
+      __catch.moveTouch = (e)=>{ const x = e.touches[0].clientX; bx = Math.min(Math.max(10, x - 60), innerWidth - 130); basket.style.left = bx+'px'; };
+      addEventListener('mousemove', __catch.moveMouse);
+      addEventListener('touchmove', __catch.moveTouch, {passive:true});
+
+      let caught=0;
+      __catch.dropId = setInterval(()=>{
+        const gift = document.createElement('div'); const isBomb = Math.random()<.18;
+        gift.className='gift'; gift.textContent = isBomb ? '💣' : '🎁';
+        gift.style.left = Math.random()*(innerWidth-40) + 'px'; gift.style.top='-40px'; stage2.appendChild(gift);
+        const fall = setInterval(()=>{
+          gift.style.top = (parseFloat(gift.style.top||'-40') + 6 + Math.random()*2) + 'px';
+          const gy=gift.offsetTop, gx=gift.offsetLeft, by=innerHeight-86;
+          if(gy>by && gx>bx && gx<bx+120){
+            if(isBomb){ caught=Math.max(0,caught-1); sBomb && sBomb.play && sBomb.play().catch(()=>{}); }
+            else { caught++; sCatch && sCatch.play && sCatch.play().catch(()=>{}); }
+            scoreEl.textContent = String(caught);
+            confetti({particleCount: isBomb?14:26, spread:70, origin:{x:(gx/innerWidth), y:0.82}});
+            clearInterval(fall); gift.remove();
+            if(caught>=10){ stopCatchGame(); switchStage(2,3); startPuzzle(); }
+          }
+          if(gy>innerHeight+60){ clearInterval(fall); gift.remove(); }
+        },30);
+      }, 880);
+
+      const startTs = Date.now();
+      __catch.timerId = setInterval(()=>{
+        const left = Math.max(0, 30000 - (Date.now()-startTs));
+        timerBar.style.width = (left/30000*100).toFixed(2) + '%';
+        if(left<=0){
+          stopCatchGame();
+          if(caught>=10){ switchStage(2,3); startPuzzle(); }
+          else{ retryCatch.style.display='inline-block'; }
+        }
+      }, 100);
+    }
+    function stopCatchGame(){
+      if(!__catch.running) return;
+      __catch.running=false;
+      clearInterval(__catch.dropId); clearInterval(__catch.timerId);
+      removeEventListener('mousemove', __catch.moveMouse); removeEventListener('touchmove', __catch.moveTouch);
+    }
+    retryCatch.onclick = ()=> startCatchGame();
+
+    /* ========= Stage3：拼图 ========= */
+    const IMG = 'https://kkkksslls.oss-cn-beijing.aliyuncs.com/syp/20250917-143046.jpg';
+    const puzzleEl = document.getElementById('puzzle'); const puzzleOk = document.getElementById('puzzleOk');
+    let firstPiece=null;
+    function startPuzzle(){
+      puzzleEl.innerHTML=''; puzzleOk.classList.remove('show'); firstPiece=null;
+      const idxs = [...Array(9).keys()].sort(()=>Math.random()-.5);
+      for(let pos=0; pos<9; pos++){
+        const i = idxs[pos]; const d = document.createElement('div'); d.className='p-piece';
+        d.style.backgroundImage=`url('${IMG}')`;
+        d.style.backgroundPosition=`-${(i%3)*100}px -${Math.floor(i/3)*100}px`;
+        d.dataset.correct=i;
+        d.onclick=()=>onPieceClick(d);
+        puzzleEl.appendChild(d);
+      }
+    }
+    function onPieceClick(p){
+      if(!firstPiece){ firstPiece=p; p.style.outline='3px solid #ffd54f'; return; }
+      if(firstPiece===p){ p.style.outline=''; firstPiece=null; return; }
+      const a=firstPiece,b=p, ai=a.dataset.correct, bi=b.dataset.correct, ab=a.style.backgroundPosition, bb=b.style.backgroundPosition;
+      a.dataset.correct=bi; b.dataset.correct=ai; a.style.backgroundPosition=bb; b.style.backgroundPosition=ab; a.style.outline=''; firstPiece=null; checkPuzzle();
+    }
+    function checkPuzzle(){
+      let ok=true; [...puzzleEl.children].forEach((c,i)=>{ if(Number(c.dataset.correct)!==i) ok=false; });
+      if(ok){ puzzleOk.classList.add('show'); confetti({particleCount:140,spread:160,origin:{y:.6}});
+        setTimeout(()=>{ switchStage(3,4); startAsteroid(); }, 700);
+      }
+    }
+
+    /* ========= Stage4：躲避陨石 ========= */
+    const asteroidArea = document.getElementById('asteroid-area'); const ship = document.getElementById('ship');
+    const astSec = document.getElementById('ast-sec'); const retryAst = document.getElementById('retryAst');
+    let ast = { moveId:0, spawnId:0, timerId:0, keys:{}, running:false, tStart:0 };
+    function startAsteroid(){
+      stopAsteroid();
+      ast.running=true; ast.keys={}; ast.tStart=Date.now(); astSec.textContent='20'; retryAst.style.display='none';
+      let pos = { x: asteroidArea.clientWidth/2-16, y: asteroidArea.clientHeight-56 };
+      ship.style.left = pos.x+'px'; ship.style.top = pos.y+'px';
+
+      function onKeyDown(e){ ast.keys[e.key]=true; } function onKeyUp(e){ ast.keys[e.key]=false; }
+      document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
+
+      function onTouchStart(e){
+        const rect=asteroidArea.getBoundingClientRect(), x=e.touches[0].clientX-rect.left;
+        pos.x += (x<rect.width/2)? -26 : 26;
+      }
+      function onTouchMove(e){
+        const rect=asteroidArea.getBoundingClientRect(); const t=e.touches[0];
+        pos.x = Math.max(0, Math.min(t.clientX-rect.left-16, rect.width-32));
+        pos.y = Math.max(0, Math.min(t.clientY-rect.top -16, rect.height-32));
+      }
+      asteroidArea.addEventListener('touchstart', onTouchStart, {passive:true});
+      asteroidArea.addEventListener('touchmove',  onTouchMove,  {passive:true});
+
+      function move(){
+        if(!ast.running) return;
+        if(ast.keys['ArrowLeft']||ast.keys['a']) pos.x-=6;
+        if(ast.keys['ArrowRight']||ast.keys['d']) pos.x+=6;
+        if(ast.keys['ArrowUp']||ast.keys['w']) pos.y-=6;
+        if(ast.keys['ArrowDown']||ast.keys['s']) pos.y+=6;
+        const W=asteroidArea.clientWidth,H=asteroidArea.clientHeight;
+        pos.x=Math.max(0,Math.min(pos.x,W-32)); pos.y=Math.max(0,Math.min(pos.y,H-32));
+        ship.style.left=pos.x+'px'; ship.style.top=pos.y+'px';
+        ast.moveId = requestAnimationFrame(move);
+      }
+      move();
+
+      function spawn(){
+        const a = document.createElement('div'); a.className='asteroid'; a.textContent='🪨';
+        a.style.left=Math.random()*(asteroidArea.clientWidth-30)+'px'; a.style.top='-30px'; asteroidArea.appendChild(a);
+        const fall=setInterval(()=>{
+          if(!ast.running){ clearInterval(fall); a.remove(); return; }
+          a.style.top=(a.offsetTop+5)+'px';
+          const ax=a.offsetLeft, ay=a.offsetTop, sx=ship.offsetLeft, sy=ship.offsetTop;
+          if(Math.abs(ax-sx)<28 && Math.abs(ay-sy)<28){ clearInterval(fall); failAst(); }
+          if(ay>asteroidArea.clientHeight+40){ clearInterval(fall); a.remove(); }
+        },30);
+      }
+      ast.spawnId = setInterval(spawn, 700);
+
+      let left=20; ast.timerId=setInterval(()=>{ left--; astSec.textContent=left; if(left<=0){ successAst(); } },1000);
+
+      function successAst(){ if(!ast.running) return; confetti({particleCount:120,spread:160,origin:{y:.6}}); stopAsteroid(); switchStage(4,5); startBreakout(); }
+      function failAst(){ if(!ast.running) return; stopAsteroid(); retryAst.style.display='inline-block'; }
+      retryAst.onclick = ()=> startAsteroid();
+    }
+    function stopAsteroid(){
+      if(!ast.running) return; ast.running=false;
+      cancelAnimationFrame(ast.moveId); clearInterval(ast.spawnId); clearInterval(ast.timerId);
+      document.onkeydown=null; document.onkeyup=null;
+      asteroidArea.replaceChildren(ship); // 移除所有陨石
+    }
+
+    /* ========= Stage5：打砖块（带道具 & 清理） ========= */
+    const boCanvas = document.getElementById('breakout'), boCtx = boCanvas.getContext('2d');
+    const boLeftEl = document.getElementById('bo-left'), boLifeEl = document.getElementById('bo-life'), retryBo = document.getElementById('retryBo');
+    let bo = { anim:0, bricks:[], balls:[], paddle:null, lives:2, drops:[], running:false, mouseMove:null, touchMove:null };
+    const POWERS = ['Expand','Shrink','Multi','Slow','Fast']; // 道具
+    function startBreakout(){
+      stopBreakout();
+      bo.running=true; bo.lives=2; bo.drops=[]; bo.balls=[]; bo.bricks=[];
+      const W=boCanvas.width, H=boCanvas.height;
+      // 砖块
+      const rows=5, cols=9, pad=8, top=40, left=10, bw=Math.floor((W-left*2-pad*(cols-1))/cols), bh=18;
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+        bo.bricks.push({x:left+c*(bw+pad),y:top+r*(bh+pad),w:bw,h:bh,alive:true, power: (Math.random()<0.22? POWERS[Math.floor(Math.random()*POWERS.length)] : null) });
+      }
+      boLeftEl.textContent = bo.bricks.filter(b=>b.alive).length;
+      // 挡板/球
+      bo.paddle={x:W/2-45,y:H-26,w:90,h:12,speed:12};
+      bo.balls.push({x:W/2,y:H/2,r:7,dx:3.2*(Math.random()>.5?1:-1),dy:-3.2,speedMul:1});
+
+      // 控制
+      bo.mouseMove = (e)=>{ const rect=boCanvas.getBoundingClientRect(); const x=e.clientX-rect.left;
+        bo.paddle.x=Math.max(0,Math.min(x - bo.paddle.w/2, W-bo.paddle.w)); };
+      bo.touchMove = (e)=>{ const rect=boCanvas.getBoundingClientRect(); const x=e.touches[0].clientX-rect.left;
+        bo.paddle.x=Math.max(0,Math.min(x - bo.paddle.w/2, W-bo.paddle.w)); };
+      boCanvas.addEventListener('mousemove', bo.mouseMove);
+      boCanvas.addEventListener('touchmove', bo.touchMove, {passive:true});
+
+      function step(){
+        if(!bo.running) return;
+        // 球运动
+        for(const b of bo.balls){
+          b.x+=b.dx*b.speedMul; b.y+=b.dy*b.speedMul;
+          if(b.x<b.r){ b.x=b.r; b.dx=-b.dx; } if(b.x>W-b.r){ b.x=W-b.r; b.dx=-b.dx; }
+          if(b.y<b.r){ b.y=b.r; b.dy=-b.dy; }
+          // 底部：漏球
+          if(b.y>H-b.r){
+            bo.lives--; boLifeEl.textContent=Math.max(0,bo.lives);
+            if(bo.lives<0){ failBo(); return; }
+            // 重置到中心
+            b.x=W/2; b.y=H/2; b.dx=3.2*(Math.random()>.5?1:-1); b.dy=-3.2; b.speedMul=1;
+          }
+          // 挡板
+          const p=bo.paddle; if(b.y+b.r>=p.y && b.y-b.r<=p.y+p.h && b.x>=p.x && b.x<=p.x+p.w){
+            b.dy=-Math.abs(b.dy);
+            const hit=(b.x-(p.x+p.w/2))/(p.w/2); b.dx=Math.max(-5,Math.min(5,b.dx+hit*1.5));
+          }
+          // 砖块
+          for(const br of bo.bricks){
+            if(!br.alive) continue;
+            if(b.x>br.x && b.x<br.x+br.w && b.y-b.r<br.y+br.h && b.y+b.r>br.y){
+              br.alive=false; b.dy=-b.dy; boLeftEl.textContent=bo.bricks.filter(x=>x.alive).length;
+              if(br.power){ // 掉落道具
+                bo.drops.push({x:br.x+br.w/2,y:br.y,w:16,h:16,type:br.power,vy:2});
+              }
+            }
+          }
+        }
+        // 掉落道具
+        for(const d of bo.drops){
+          d.y+=d.vy;
+          // 接到
+          const p=bo.paddle;
+          if(d.y+d.h>=p.y && d.x>=p.x && d.x<=p.x+p.w){
+            applyPower(d.type);
+            d.done=true;
+          }
+          if(d.y>H+20) d.done=true;
+        }
+        bo.drops = bo.drops.filter(d=>!d.done);
+
+        // 绘制
+        boCtx.clearRect(0,0,W,H);
+        // 砖
+        boCtx.fillStyle='#ff80ab';
+        bo.bricks.forEach(br=>{ if(br.alive){ boCtx.fillRect(br.x,br.y,br.w,br.h); if(br.power){ boCtx.fillStyle='rgba(255,255,255,.18)'; boCtx.fillRect(br.x,br.y,br.w,br.h); boCtx.fillStyle='#ff80ab'; } }});
+        // 挡板
+        boCtx.fillStyle='#ffd54f'; boCtx.fillRect(bo.paddle.x,bo.paddle.y,bo.paddle.w,bo.paddle.h);
+        // 球
+        boCtx.fillStyle='#fff'; bo.balls.forEach(b=>{ boCtx.beginPath(); boCtx.arc(b.x,b.y,b.r,0,Math.PI*2); boCtx.fill(); });
+        // 道具
+        boCtx.font='12px system-ui'; boCtx.textAlign='center'; boCtx.textBaseline='middle';
+        bo.drops.forEach(d=>{ boCtx.fillStyle='#fff'; boCtx.beginPath(); boCtx.arc(d.x,d.y,10,0,Math.PI*2); boCtx.fill();
+          boCtx.fillStyle='#000'; boCtx.fillText(iconOf(d.type), d.x, d.y+0.5); });
+
+        // 胜利
+        if(bo.bricks.every(b=>!b.alive)){ successBo(); return; }
+
+        bo.anim = requestAnimationFrame(step);
+      }
+      boLifeEl.textContent=bo.lives; bo.anim=requestAnimationFrame(step);
+
+      function iconOf(t){ return ({Expand:'E',Shrink:'S',Multi:'M',Slow:'⏪',Fast:'⏩'})[t]||'?'; }
+      function applyPower(t){
+        const p=bo.paddle;
+        if(t==='Expand') p.w=Math.min(p.w+30, 140);
+        if(t==='Shrink') p.w=Math.max(p.w-25, 60);
+        if(t==='Multi'){ // 复制两颗球
+          const add=[]; bo.balls.forEach(b=>{ add.push({x:b.x,y:b.y,r:b.r,dx:-b.dx,dy:b.dy,speedMul:b.speedMul}); });
+          bo.balls.push(...add);
+        }
+        if(t==='Slow')  bo.balls.forEach(b=> b.speedMul=Math.max(0.7, b.speedMul-0.2));
+        if(t==='Fast')  bo.balls.forEach(b=> b.speedMul=Math.min(1.7, b.speedMul+0.25));
+      }
+      function successBo(){ if(!bo.running) return; confetti({particleCount:160,spread:200,origin:{y:.6}}); stopBreakout(); switchStage(5,6); startMaze(); }
+      function failBo(){ if(!bo.running) return; stopBreakout(); retryBo.style.display='inline-block'; }
+      retryBo.onclick = ()=> startBreakout();
+    }
+    function stopBreakout(){
+      if(!bo.running) return; bo.running=false;
+      cancelAnimationFrame(bo.anim); boCtx.clearRect(0,0,boCanvas.width,boCanvas.height);
+      boCanvas.removeEventListener('mousemove', bo.mouseMove); boCanvas.removeEventListener('touchmove', bo.touchMove);
+    }
+
+    /* ========= Stage6：随机迷宫 ========= */
+    const mazeGrid = document.getElementById('maze-grid');
+    const dirButtons = document.querySelectorAll('.dirpad button');
+    let mz = {N:0, grid:[], px:1, py:1, ex:0, ey:0, keyHandler:null};
+    function startMaze(sizeOdd){
+      stopMaze();
+      const N = sizeOdd || [11,13,15][Math.floor(Math.random()*3)]; // 奇数大小
+      mz.N=N; mazeGrid.style.gridTemplateColumns=`repeat(${N},26px)`; mazeGrid.style.gridTemplateRows=`repeat(${N},26px)`;
+      // 初始化：全墙
+      const G = Array.from({length:N}, ()=>Array.from({length:N},()=>0)); // 0墙,1路
+      // 挖迷宫（递归回溯）
+      function carve(x,y){
+        G[y][x]=1;
+        const dirs=[[2,0],[0,2],[-2,0],[0,-2]].sort(()=>Math.random()-.5);
+        for(const [dx,dy] of dirs){
+          const nx=x+dx, ny=y+dy;
+          if(nx>0 && nx<N-1 && ny>0 && ny<N-1 && G[ny][nx]===0){
+            G[y+dy/2][x+dx/2]=1; carve(nx,ny);
+          }
+        }
+      }
+      carve(1,1);
+      // 起点(1,1) 终点设在最远角落之一
+      mz.px=1; mz.py=1;
+      const exits=[[N-2,N-2],[1,N-2],[N-2,1]];
+      [mz.ex,mz.ey] = exits[Math.floor(Math.random()*exits.length)];
+
+      // 渲染
+      mazeGrid.innerHTML='';
+      for(let y=0;y<N;y++){
+        for(let x=0;x<N;x++){
+          const d=document.createElement('div'); d.className='cell';
+          if(G[y][x]===0) d.classList.add('wall');
+          if(x===mz.px && y===mz.py){ d.classList.add('player'); }
+          if(x===mz.ex && y===mz.ey){ d.classList.add('exit'); }
+          d.dataset.x=x; d.dataset.y=y; mazeGrid.appendChild(d);
+        }
+      }
+      mz.grid=G;
+      function draw(){
+        [...mazeGrid.children].forEach(c=>c.classList.remove('player'));
+        mazeGrid.children[mz.py*N+mz.px].classList.add('player');
+      }
+      function move(dx,dy){
+        const nx=mz.px+dx, ny=mz.py+dy;
+        if(nx>=0 && nx<N && ny>=0 && ny<N && G[ny][nx]===1){
+          mz.px=nx; mz.py=ny; draw();
+          if(nx===mz.ex && ny===mz.ey){
+            confetti({particleCount:160,spread:200,origin:{y:.6}});
+            stopMaze(); switchStage(6,7); loadQuestion();
+          }
+        }
+      }
+      // 键盘
+      mz.keyHandler=(e)=>{
+        const k=e.key.toLowerCase();
+        if(k==='arrowup'||k==='w') move(0,-1);
+        if(k==='arrowdown'||k==='s') move(0,1);
+        if(k==='arrowleft'||k==='a') move(-1,0);
+        if(k==='arrowright'||k==='d') move(1,0);
+      };
+      addEventListener('keydown', mz.keyHandler);
+      // 触控
+      dirButtons.forEach(b=> b.onclick=()=>{ const m=b.dataset.dir; if(m==='U')move(0,-1); if(m==='D')move(0,1); if(m==='L')move(-1,0); if(m==='R')move(1,0); });
+    }
+    function stopMaze(){ if(mz.keyHandler){ removeEventListener('keydown', mz.keyHandler); mz.keyHandler=null; } }
+
+    /* ========= Stage7：情侣答题 ========= */
+    const Qs = [
+      {q:"我们第一次见面是？", a:["图书馆","操场","公司"], correct:2},
+      {q:"我最喜欢的水果是？", a:["草莓","西瓜","芒果"], correct:1},
+      {q:"我们第一次牵手是在？", a:["电影院","公交车","电梯"], correct:2}
+    ];
+    const qsEl=document.getElementById('question'), ansEl=document.getElementById('answers'), toast=document.getElementById('toast');
+    let qi=0;
+    function loadQuestion(){
+      const q=Qs[qi]; qsEl.textContent=q.q; ansEl.innerHTML='';
+      q.a.forEach((t,i)=>{ const b=document.createElement('button'); b.textContent=t; b.onclick=()=>checkAnswer(i); ansEl.appendChild(b); });
+    }
+    function checkAnswer(i){
+      const q=Qs[qi];
+      if(i===q.correct){
+        confetti({particleCount:120,spread:180,origin:{y:.6}});
+        toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 800);
+        if(qi<Qs.length-1){ qi++; setTimeout(loadQuestion, 350); }
+        else{ switchStage(7,8); finale(); }
+      }else{ alert('答错啦，再想想～'); }
+    }
+
+    /* ========= Stage8：彩蛋 ========= */
+    function finale(){
+      let id=setInterval(()=>{ confetti({particleCount:200,spread:260,origin:{y:.6}}); }, 900);
+      document.getElementById('stage8').addEventListener('click', ()=>{ confetti({particleCount:240,spread:280}); });
+      // 如需切音乐：取消注释
+      // const bg=document.getElementById('bg-music'); bg.src='love.mp3'; bg.play().catch(()=>{});
+      setTimeout(()=>clearInterval(id), 12000);
+    }
+
+    /* ========= 启动顺序提示 =========
+      1 -> 2(startCatchGame) -> 3(startPuzzle) -> 4(startAsteroid) -> 5(startBreakout)
+      -> 6(startMaze) -> 7(loadQuestion) -> 8(finale)
+    ================================== */
+  </script>
 <script>
 const bgMusic = document.getElementById("bg-music");
 bgMusic.oncanplaythrough = () => console.log("✅ 背景音乐已加载");
