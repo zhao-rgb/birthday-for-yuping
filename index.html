@@ -98,7 +98,7 @@
 </div>
 <!-- Stage2 接礼物 -->
 <div class="stage hidden" id="stage2">
-<h2>第二关：接住 15 个礼物！ 🎁（小心 💣，它们掉得飞快！）</h2>
+<h2>第二关：接住 10 个礼物！ 🎁（小心 💣）</h2>
 <div class="timer-wrap" style="margin:6px 0 8px;"><div class="timer-bar" id="timerBar"></div></div>
 <div>得分：<b id="score">0</b> / 10</div>
 <div id="basket">篮子</div>
@@ -563,16 +563,59 @@
     ================================== */
   </script>
 <script>
-// 接礼物难度强化
-let giftTarget = 15;          // 必须接 15 个礼物
-let giftFallSpeed = 3.0;      // 掉落速度更快
-let bombChance = 0.35;        // 炸弹概率 35%
+// ---- 接礼物关卡强化版 ----
 
-// 检查是否过关
-function checkGiftScore(score) {
-  if (score >= giftTarget) {
-    nextStage();  // 进入下一关
-  }
+// 必须接 15 个才通关
+let giftTarget = 15;
+
+// 更快的掉落速度
+function createGift(isBomb = false) {
+  const gift = document.createElement("div");
+  gift.className = "gift";
+  gift.textContent = isBomb ? "💣" : "🎁";
+  gift.style.left = Math.random() * (window.innerWidth - 40) + "px";
+  gift.style.top = "0px";
+  gift.speed = 3 + Math.random() * 2; // 掉落更快
+  gift.isBomb = isBomb;
+  document.getElementById("stage2").appendChild(gift);
+  return gift;
+}
+
+let gifts = [];
+let score = 0;
+
+function dropGifts() {
+  gifts.forEach((g, i) => {
+    g.style.top = (parseFloat(g.style.top) + g.speed) + "px";
+    if (parseFloat(g.style.top) > window.innerHeight - 100) {
+      // 碰到篮子逻辑略 (假设已存在)
+      if (!g.isBomb) {
+        score++;
+        document.getElementById("score").innerText = score;
+        if (score >= giftTarget) {
+          alert("恭喜过关！");
+          nextStage(); // 进入下一关
+        }
+      } else {
+        alert("踩到炸弹，失败！");
+        retryCatch();
+      }
+      g.remove();
+      gifts.splice(i, 1);
+    }
+  });
+  requestAnimationFrame(dropGifts);
+}
+
+// 启动函数 (调用时机根据原逻辑调整)
+function startCatchGame() {
+  score = 0;
+  gifts = [];
+  setInterval(() => {
+    const isBomb = Math.random() < 0.35; // 35% 炸弹
+    gifts.push(createGift(isBomb));
+  }, 800); // 更快生成
+  dropGifts();
 }
 </script></body>
 </html>
