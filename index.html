@@ -229,7 +229,7 @@
         gift.className='gift'; gift.textContent = isBomb ? '💣' : '🎁';
         gift.style.left = Math.random()*(innerWidth-40) + 'px'; gift.style.top='-40px'; stage2.appendChild(gift);
         const fall = setInterval(()=>{
-          gift.style.top = (parseFloat(gift.style.top||'-40') + 10 + Math.random()*4) + 'px';
+          gift.style.top = (parseFloat(gift.style.top||'-40') + 5 + Math.random()*2) + 'px';
           const gy=gift.offsetTop, gx=gift.offsetLeft, by=innerHeight-86;
           if(gy>by && gx>bx && gx<bx+120){
             if(isBomb){ caught=Math.max(0,caught-1); sBomb && sBomb.play && sBomb.play().catch(()=>{}); }
@@ -240,7 +240,7 @@
             if(caught>=15){ stopCatchGame(); switchStage(2,3); startPuzzle(); }
           }
           if(gy>innerHeight+60){ clearInterval(fall); gift.remove(); }
-        },600);
+        },500);
       }, 880);
 
       const startTs = Date.now();
