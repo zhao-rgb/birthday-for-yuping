@@ -79,21 +79,34 @@
     #final-msg{font-size:2.4em;color:var(--pink2);font-weight:800;animation:glow 2s infinite alternate}
     @keyframes glow{from{text-shadow:0 0 8px #ff80ab}to{text-shadow:0 0 26px #c2185b}}
     #final-photo{width:260px;border-radius:14px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-  </style>
+  
+.heart {
+  display: inline-block;
+  color: red;
+  font-size: 22px;
+  animation: heartbeat 1s infinite;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+</style>
 </head>
 <body>
 <!-- 音乐 -->
 <audio autoplay="autoplay" id="bg-music" loop="loop" muted="muted" style="display:none;">
 <source src="music.mp3" type="audio/mpeg"/>
 </audio>
-
-
 <!-- 星空背景 -->
 <canvas id="bg"></canvas>
 <!-- Stage1 找真心 -->
 <div class="stage" id="stage1">
 <h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
-<p>点中真正那颗「真心」才能继续 💖（别点假心心哦）</p>
+<p>点中真正那颗【真心】才能继续 <span class="heart">❤️</span> （别点假心心哦）</p>
 <div id="hearts"></div>
 </div>
 <!-- Stage2 接礼物 -->
