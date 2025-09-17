@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>生日快乐 沈雨坪 · 进阶版</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
+<meta charset="utf-8"/>
+<title>生日快乐 沈雨坪 · 进阶版</title>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<style>
     :root{
       --pink:#e91e63; --pink2:#ff80ab; --mask:rgba(0,0,0,.55);
       --gold:#ffd54f; --green:#4caf50; --deep:#111; --light:#eee;
@@ -81,94 +82,84 @@
   </style>
 </head>
 <body>
-  <!-- 音乐 -->
-  <audio id="bg-music" autoplay loop>
-    <source src="https://raw.githubusercontent.com/zhao-rgb/birthday-for-yuping/main/music.mp3" type="audio/mpeg" />
-  </audio>
-  <audio id="s-catch" src="catch.mp3" preload="auto"></audio>
-  <audio id="s-bomb"  src="bomb.mp3"  preload="auto"></audio>
-
-  <!-- 星空背景 -->
-  <canvas id="bg"></canvas>
-
-  <!-- Stage1 找真心 -->
-  <div id="stage1" class="stage">
-    <h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
-    <p>点中真正那颗「真心」才能继续 💖（别点假心心哦）</p>
-    <div id="hearts"></div>
-  </div>
-
-  <!-- Stage2 接礼物 -->
-  <div id="stage2" class="stage hidden">
-    <h2>第二关：接住 10 个礼物！ 🎁（小心 💣）</h2>
-    <div class="timer-wrap" style="margin:6px 0 8px;"><div id="timerBar" class="timer-bar"></div></div>
-    <div>得分：<b id="score">0</b> / 10</div>
-    <div id="basket">篮子</div>
-    <div class="mobile-hint">📱 提示：左右滑动/拖动屏幕移动篮子</div>
-    <button id="retryCatch" class="retry">重试本关</button>
-  </div>
-
-  <!-- Stage3 拼图 -->
-  <div id="stage3" class="stage hidden">
-    <h2>第三关：拼出我们的合照 🧩</h2>
-    <div id="puzzle"></div>
-    <div id="puzzleOk" class="success-text">完成啦！好棒 👏</div>
-  </div>
-
-  <!-- Stage4 躲避陨石 -->
-  <div id="stage4" class="stage hidden">
-    <h2>第四关：躲避陨石 🚀</h2>
-    <p>方向键/WASD；手机点击左/右半区移动；坚持 <b>20</b> 秒过关</p>
-    <div id="asteroid-area"><div id="ship">🚀</div></div>
-    <div id="asteroid-hud">剩余时间：<b id="ast-sec">20</b> 秒 <span class="badge">撞到失败</span></div>
-    <button id="retryAst" class="retry">重试本关</button>
-  </div>
-
-  <!-- Stage5 打砖块（带道具） -->
-  <div id="stage5" class="stage hidden">
-    <h2>第五关：打砖块 🧱 <span class="badge">道具：扩板 / 缩板 / 多球 / 慢速 / 加速</span></h2>
-    <div id="breakout-wrap">
-      <canvas id="breakout" width="520" height="360"></canvas>
-      <div>砖块剩余：<b id="bo-left">0</b>　生命：<b id="bo-life">2</b></div>
-      <button id="retryBo" class="retry">重试本关</button>
-    </div>
-    <p style="opacity:.85">鼠标/触控移动挡板；接住掉落道具获得效果</p>
-  </div>
-
-  <!-- Stage6 迷宫（随机生成） -->
-  <div id="stage6" class="stage hidden">
-    <h2>第六关：迷宫探险 🌀</h2>
-    <div id="maze-wrap">
-      <div id="maze-grid"></div>
-      <div class="dirpad">
-        <button data-dir="U">⬆️</button>
-        <div>
-          <button data-dir="L">⬅️</button>
-          <button data-dir="D">⬇️</button>
-          <button data-dir="R">➡️</button>
-        </div>
-      </div>
-      <div>键盘 WASD/方向键 或 点击方向按钮移动；走到 <b style="color:var(--green)">绿色出口</b></div>
-    </div>
-  </div>
-
-  <!-- Stage7 情侣答题 -->
-  <div id="stage7" class="stage hidden">
-    <h2>第七关：情侣答题 💑</h2>
-    <div id="question" style="margin:12px 0;font-size:1.2em;"></div>
-    <div id="answers" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"></div>
-    <div id="toast" class="toast">答对啦！🎉</div>
-  </div>
-
-  <!-- Stage8 彩蛋 -->
-  <div id="stage8" class="stage hidden">
-    <div id="final-msg">🎉 生日快乐，沈雨坪！我爱你 ❤️</div>
-    <img id="final-photo" src="https://kkkksslls.oss-cn-beijing.aliyuncs.com/syp/20250917-142843.jpg" alt="photo">
-    <p style="opacity:.9">轻点屏幕可再放一波烟花✨</p>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-  <script>
+<!-- 音乐 -->
+<audio autoplay="autoplay" id="bg-music" loop="" src="music.mp3" style="display:none;">
+<source src="https://raw.githubusercontent.com/zhao-rgb/birthday-for-yuping/main/music.mp3" type="audio/mpeg"/>
+</audio>
+<audio autoplay="autoplay" id="s-catch" preload="auto" src="catch.mp3" style="display:none;"></audio>
+<audio autoplay="autoplay" id="s-bomb" preload="auto" src="bomb.mp3" style="display:none;"></audio>
+<!-- 星空背景 -->
+<canvas id="bg"></canvas>
+<!-- Stage1 找真心 -->
+<div class="stage" id="stage1">
+<h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
+<p>点中真正那颗「真心」才能继续 💖（别点假心心哦）</p>
+<div id="hearts"></div>
+</div>
+<!-- Stage2 接礼物 -->
+<div class="stage hidden" id="stage2">
+<h2>第二关：接住 10 个礼物！ 🎁（小心 💣）</h2>
+<div class="timer-wrap" style="margin:6px 0 8px;"><div class="timer-bar" id="timerBar"></div></div>
+<div>得分：<b id="score">0</b> / 10</div>
+<div id="basket">篮子</div>
+<div class="mobile-hint">📱 提示：左右滑动/拖动屏幕移动篮子</div>
+<button class="retry" id="retryCatch">重试本关</button>
+</div>
+<!-- Stage3 拼图 -->
+<div class="stage hidden" id="stage3">
+<h2>第三关：拼出我们的合照 🧩</h2>
+<div id="puzzle"></div>
+<div class="success-text" id="puzzleOk">完成啦！好棒 👏</div>
+</div>
+<!-- Stage4 躲避陨石 -->
+<div class="stage hidden" id="stage4">
+<h2>第四关：躲避陨石 🚀</h2>
+<p>方向键/WASD；手机点击左/右半区移动；坚持 <b>20</b> 秒过关</p>
+<div id="asteroid-area"><div id="ship">🚀</div></div>
+<div id="asteroid-hud">剩余时间：<b id="ast-sec">20</b> 秒 <span class="badge">撞到失败</span></div>
+<button class="retry" id="retryAst">重试本关</button>
+</div>
+<!-- Stage5 打砖块（带道具） -->
+<div class="stage hidden" id="stage5">
+<h2>第五关：打砖块 🧱 <span class="badge">道具：扩板 / 缩板 / 多球 / 慢速 / 加速</span></h2>
+<div id="breakout-wrap">
+<canvas height="360" id="breakout" width="520"></canvas>
+<div>砖块剩余：<b id="bo-left">0</b>　生命：<b id="bo-life">2</b></div>
+<button class="retry" id="retryBo">重试本关</button>
+</div>
+<p style="opacity:.85">鼠标/触控移动挡板；接住掉落道具获得效果</p>
+</div>
+<!-- Stage6 迷宫（随机生成） -->
+<div class="stage hidden" id="stage6">
+<h2>第六关：迷宫探险 🌀</h2>
+<div id="maze-wrap">
+<div id="maze-grid"></div>
+<div class="dirpad">
+<button data-dir="U">⬆️</button>
+<div>
+<button data-dir="L">⬅️</button>
+<button data-dir="D">⬇️</button>
+<button data-dir="R">➡️</button>
+</div>
+</div>
+<div>键盘 WASD/方向键 或 点击方向按钮移动；走到 <b style="color:var(--green)">绿色出口</b></div>
+</div>
+</div>
+<!-- Stage7 情侣答题 -->
+<div class="stage hidden" id="stage7">
+<h2>第七关：情侣答题 💑</h2>
+<div id="question" style="margin:12px 0;font-size:1.2em;"></div>
+<div id="answers" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"></div>
+<div class="toast" id="toast">答对啦！🎉</div>
+</div>
+<!-- Stage8 彩蛋 -->
+<div class="stage hidden" id="stage8">
+<div id="final-msg">🎉 生日快乐，沈雨坪！我爱你 ❤️</div>
+<img alt="photo" id="final-photo" src="https://kkkksslls.oss-cn-beijing.aliyuncs.com/syp/20250917-142843.jpg"/>
+<p style="opacity:.9">轻点屏幕可再放一波烟花✨</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script>
     /* ========= 星空背景 ========= */
     const bg = document.getElementById('bg'), bctx = bg.getContext('2d');
     function fit(){ bg.width = innerWidth; bg.height = innerHeight }
