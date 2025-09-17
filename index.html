@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>生日快乐 沈雨坪</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      font-family: "微软雅黑", sans-serif;
+      background: linear-gradient(to right, #ffdde1, #ee9ca7);
+      height: 100vh; display: flex;
+      justify-content: center; align-items: center;
+      flex-direction: column; text-align: center;
+    }
+    .hidden { display: none; }
+    button {
+      margin: 10px; padding: 10px 20px;
+      border: none; border-radius: 20px;
+      background: #e91e63; color: white;
+      font-size: 1.2em; cursor: pointer;
+    }
+    button:hover { background: #c2185b; }
+    .heart {
+      position: absolute; font-size: 2em; cursor: pointer;
+    }
+    #question { font-size: 1.5em; margin: 20px; }
+  </style>
+</head>
+<body>
+  <!-- 开场 -->
+  <div id="stage1">
+    <h1>🎂 沈雨坪，今天是你的特别的一天 🎂</h1>
+    <p>点中正确的小心心才能继续哦 💖</p>
+    <div id="hearts"></div>
+  </div>
+
+  <!-- 答题 -->
+  <div id="stage2" class="hidden">
+    <h2>第二关：答对问题才有惊喜！</h2>
+    <div id="question"></div>
+    <div id="answers"></div>
+  </div>
+
+  <!-- 刮刮卡 -->
+  <div id="stage3" class="hidden">
+    <h2>刮开惊喜卡片 🎁</h2>
+    <canvas id="scratch" width="300" height="150"></canvas>
+    <div style="margin-top:20px;font-size:1.5em;color:#880e4f;font-weight:bold;">
+      沈雨坪，我爱你 ❤️
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    // ========== 第一关：点击心 ==========
+    const heartsContainer = document.getElementById("hearts");
+    for (let i=0; i<10; i++) {
+      let heart = document.createElement("div");
+      heart.innerHTML = "💖";
+      heart.classList.add("heart");
+      heart.style.left = Math.random()*80 + "%";
+      heart.style.top = Math.random()*80 + "%";
+      heartsContainer.appendChild(heart);
+
+      heart.onclick = () => {
+        if (i === 3) { // 假设第4颗才是正确的
+          document.getElementById("stage1").classList.add("hidden");
+          document.getElementById("stage2").classList.remove("hidden");
+          loadQuestion();
+        } else {
+          alert("不是这颗心哦，再试试~");
+        }
+      }
+    }
+
+    // ========== 第二关：答题 ==========
+    const questions = [
+      {q:"我们第一次见面是在哪里？", a:["图书馆","食堂","操场"], correct:0},
+      {q:"你最喜欢的甜品是？", a:["蛋糕","冰淇淋","巧克力"], correct:1}
+    ];
+    let currentQ = 0;
+
+    function loadQuestion() {
+      const q = questions[currentQ];
+      document.getElementById("question").innerText = q.q;
+      const answersDiv = document.getElementById("answers");
+      answersDiv.innerHTML = "";
+      q.a.forEach((ans,idx)=>{
+        let btn = document.createElement("button");
+        btn.innerText = ans;
+        btn.onclick = ()=>checkAnswer(idx);
+        answersDiv.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(idx) {
+      if (idx === questions[currentQ].correct) {
+        if (currentQ < questions.length-1) {
+          currentQ++;
+          loadQuestion();
+        } else {
+          document.getElementById("stage2").classList.add("hidden");
+          document.getElementById("stage3").classList.remove("hidden");
+          initScratch();
+        }
+      } else {
+        alert("答错啦，再想想~");
+      }
+    }
+
+    // ========== 第三关：刮刮卡 ==========
+    function initScratch() {
+      const canvas = document.getElementById("scratch");
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#e91e63";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.globalCompositeOperation="destination-out";
+
+      let scratching=false;
+      canvas.addEventListener("mousedown",()=>scratching=true);
+      canvas.addEventListener("mouseup",()=>scratching=false);
+      canvas.addEventListener("mousemove",e=>{
+        if(!scratching)return;
+        ctx.beginPath();
+        ctx.arc(e.offsetX,e.offsetY,20,0,Math.PI*2);
+        ctx.fill();
+      });
+
+      // 最终彩带爆炸
+      setTimeout(()=>{
+        confetti({particleCount:300,spread:150,origin:{y:0.7}});
+      },2000);
+    }
+  </script>
+</body>
+</html>
