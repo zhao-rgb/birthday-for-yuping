@@ -79,12 +79,28 @@
     #final-msg{font-size:2.4em;color:var(--pink2);font-weight:800;animation:glow 2s infinite alternate}
     @keyframes glow{from{text-shadow:0 0 8px #ff80ab}to{text-shadow:0 0 26px #c2185b}}
     #final-photo{width:260px;border-radius:14px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-  </style>
+  
+#maze-grid {
+  display: grid;
+  grid-template-columns: repeat(25, 18px);
+  grid-template-rows: repeat(25, 18px);
+  gap: 2px;
+  background: rgba(255,255,255,.06);
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4);
+}
+.cell { width:18px; height:18px; background:#333; }
+.wall { background:#111; }
+.player { background:#ff4081; }
+.exit { background:#333; }      /* 默认隐藏 */
+.exit.visible { background:var(--green); } /* 靠近才显示 */
+</style>
 </head>
 <body>
 <!-- 音乐 -->
-<audio autoplay="autoplay" id="bg-music" loop="loop" muted="muted" style="display:none;">
-<source src="music.mp3" type="audio/mpeg"/>
+<audio autoplay="" id="bg-music" loop="">
+<source src="https://raw.githubusercontent.com/zhao-rgb/birthday-for-yuping/main/music.mp3" type="audio/mpeg"/>
 </audio>
 <audio id="s-catch" preload="auto" src="catch.mp3"></audio>
 <audio id="s-bomb" preload="auto" src="bomb.mp3"></audio>
@@ -93,12 +109,12 @@
 <!-- Stage1 找真心 -->
 <div class="stage" id="stage1">
 <h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
-<p>点中真正那颗「真心」才能继续 💖（别点假心心哦）</p>
+<p>点中真正那颗【真心】才能继续 ❤️ （别点假心心哦）⚠️ 注意：假心心数量更多！</p>
 <div id="hearts"></div>
 </div>
 <!-- Stage2 接礼物 -->
 <div class="stage hidden" id="stage2">
-<h2>第二关：接住 10 个礼物！ 🎁（小心 💣）</h2>
+<h2>第二关：接住 15 个礼物！ 🎁（小心 💣，它们下落更快啦！）</h2>
 <div class="timer-wrap" style="margin:6px 0 8px;"><div class="timer-bar" id="timerBar"></div></div>
 <div>得分：<b id="score">0</b> / 10</div>
 <div id="basket">篮子</div>
@@ -107,21 +123,21 @@
 </div>
 <!-- Stage3 拼图 -->
 <div class="stage hidden" id="stage3">
-<h2>第三关：拼出我们的合照 🧩</h2>
+<h2>第三关：拼出我们的合照 🧩（这次碎片更乱了！）</h2>
 <div id="puzzle"></div>
 <div class="success-text" id="puzzleOk">完成啦！好棒 👏</div>
 </div>
 <!-- Stage4 躲避陨石 -->
 <div class="stage hidden" id="stage4">
 <h2>第四关：躲避陨石 🚀</h2>
-<p>方向键/WASD；手机点击左/右半区移动；坚持 <b>20</b> 秒过关</p>
+<p>方向键/WASD；手机点击左/右半区移动；坚持 30 秒过关（陨石更快更密集！）</p>
 <div id="asteroid-area"><div id="ship">🚀</div></div>
 <div id="asteroid-hud">剩余时间：<b id="ast-sec">20</b> 秒 <span class="badge">撞到失败</span></div>
 <button class="retry" id="retryAst">重试本关</button>
 </div>
 <!-- Stage5 打砖块（带道具） -->
 <div class="stage hidden" id="stage5">
-<h2>第五关：打砖块 🧱 <span class="badge">道具：扩板 / 缩板 / 多球 / 慢速 / 加速</span></h2>
+<h2>第五关：打砖块 🧱 (生命：1 条) &lt;span class='badge'&gt;道具：扩板 / 缩板 / 多球 / 慢速 / 加速&lt;/span&gt;</h2>
 <div id="breakout-wrap">
 <canvas height="360" id="breakout" width="520"></canvas>
 <div>砖块剩余：<b id="bo-left">0</b>　生命：<b id="bo-life">2</b></div>
@@ -131,7 +147,7 @@
 </div>
 <!-- Stage6 迷宫（随机生成） -->
 <div class="stage hidden" id="stage6">
-<h2>第六关：迷宫探险 🌀</h2>
+<h2>第六关：迷宫探险 🌀（出口被隐藏，靠近才会显现！）</h2>
 <div id="maze-wrap">
 <div id="maze-grid"></div>
 <div class="dirpad">
@@ -563,21 +579,27 @@
     ================================== */
   </script>
 <script>
-const bgMusic = document.getElementById("bg-music");
-bgMusic.oncanplaythrough = () => console.log("✅ 背景音乐已加载");
-bgMusic.onerror = () => console.log("❌ 背景音乐加载失败，检查路径");
+// 调整接礼物掉落速度、目标数
+let giftTarget = 15;
+let giftFallSpeed = 1.4; // 比原来快
 
-function unlockBgMusic() {
-  bgMusic.muted = false;
-  bgMusic.play().then(()=>{
-    console.log("🎵 背景音乐开始播放");
-  }).catch(err=>{
-    console.log("⚠️ 播放失败:", err);
-  });
-  document.removeEventListener("click", unlockBgMusic);
-  document.removeEventListener("touchstart", unlockBgMusic);
+// 调整陨石下落速度
+let asteroidSpeed = 1.5; // 比原来快
+
+// 调整砖块生命
+let breakoutLives = 1;
+
+// 迷宫：出口靠近时才显现
+function revealExitIfClose(playerX, playerY, exitX, exitY) {
+  const distance = Math.abs(playerX - exitX) + Math.abs(playerY - exitY);
+  const exitCell = document.querySelector(".exit");
+  if (exitCell) {
+    if (distance <= 2) {
+      exitCell.classList.add("visible");
+    } else {
+      exitCell.classList.remove("visible");
+    }
+  }
 }
-document.addEventListener("click", unlockBgMusic);
-document.addEventListener("touchstart", unlockBgMusic);
 </script></body>
 </html>
