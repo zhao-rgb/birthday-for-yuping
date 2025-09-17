@@ -1,136 +1,222 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>生日快乐 沈雨坪</title>
+  <meta charset="UTF-8" />
+  <title>生日快乐 沈雨坪 · 进阶冒险</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body {
-      margin: 0; padding: 0;
-      font-family: "微软雅黑", sans-serif;
-      background: linear-gradient(to right, #ffdde1, #ee9ca7);
-      height: 100vh; display: flex;
-      justify-content: center; align-items: center;
-      flex-direction: column; text-align: center;
+    :root{
+      --pink:#e91e63; --pink2:#ff80ab; --mask:rgba(0,0,0,.55);
+      --gold:#ffd54f; --green:#4caf50; --deep:#111; --light:#eee;
     }
-    .hidden { display: none; }
-    button {
-      margin: 10px; padding: 10px 20px;
-      border: none; border-radius: 20px;
-      background: #e91e63; color: white;
-      font-size: 1.2em; cursor: pointer;
-    }
-    button:hover { background: #c2185b; }
-    .heart {
-      position: absolute; font-size: 2em; cursor: pointer;
-    }
-    #question { font-size: 1.5em; margin: 20px; }
+    html,body{height:100%}
+    body{margin:0;padding:0;overflow:hidden;text-align:center;background:#000;
+      font-family:"微软雅黑",system-ui,-apple-system,Segoe UI,Roboto,PingFang SC;}
+
+    .stage{position:absolute;inset:0;display:flex;flex-direction:column;
+      justify-content:center;align-items:center;background:var(--mask);
+      color:#fff;transition:opacity .6s ease;}
+    .hidden{opacity:0;pointer-events:none}
+    h1,h2{color:var(--pink2);text-shadow:0 0 10px rgba(255,128,171,.6);margin:.2rem 0}
+    button{margin:10px;padding:12px 22px;border:none;border-radius:24px;
+      background:linear-gradient(45deg,var(--pink),var(--pink2));color:#fff;font-size:1.05em;
+      cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .18s;}
+    button:hover{transform:scale(1.05)}
+    canvas#bg{position:absolute;inset:0;z-index:-1}
+
+    /* Stage1 hearts */
+    #hearts{position:relative;width:100%;height:60%}
+    .heart{position:absolute;font-size:3.2em;cursor:pointer;user-select:none;
+      animation:float 6s infinite ease-in-out;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+    @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-18px)}100%{transform:translateY(0)}}
+
+    /* Stage2 catch */
+    #basket{position:absolute;bottom:18px;width:120px;height:56px;background:#d81b60;border-radius:16px;
+      text-align:center;line-height:56px;color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+    .gift{position:absolute;font-size:2em;user-select:none}
+    .timer-wrap{width:70vw;max-width:520px;height:10px;background:rgba(255,255,255,.18);
+      border-radius:999px;overflow:hidden;box-shadow:inset 0 0 8px rgba(0,0,0,.35)}
+    .timer-bar{height:100%;background:linear-gradient(90deg,#ffd54f,#ff7043);width:100%;transition:width .2s linear}
+    .mobile-hint{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);font-size:.95em;opacity:.85}
+    .retry{display:none}
+
+    /* Stage3 puzzle */
+    #puzzle{width:306px;height:306px;display:grid;grid-template-columns:repeat(3,100px);grid-template-rows:repeat(3,100px);
+      gap:2px;padding:4px;border-radius:10px;background:rgba(255,255,255,.06);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+    .p-piece{width:100px;height:100px;background-size:300px 300px;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+    .success-text{margin-top:14px;color:var(--gold);font-weight:700;opacity:0;transform:translateY(8px);transition:all .5s ease}
+    .success-text.show{opacity:1;transform:translateY(0)}
+
+    /* Stage4 asteroid */
+    #asteroid-area{position:relative;width:90%;max-width:520px;height:520px;background:rgba(255,255,255,.06);
+      border:2px solid var(--pink2);border-radius:12px;overflow:hidden;touch-action:none}
+    #ship{position:absolute;font-size:2em;user-select:none}
+    .asteroid{position:absolute;font-size:1.6em;user-select:none}
+
+    /* Stage5 breakout */
+    #breakout-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+    #breakout{background:rgba(255,255,255,.06);border:2px solid var(--pink2);border-radius:12px;touch-action:none}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.12);margin-left:6px;font-size:.9em}
+
+    /* Stage6 maze */
+    #maze-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+    #maze-grid{display:grid;gap:2px;background:rgba(255,255,255,.06);padding:6px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+    .cell{width:26px;height:26px;background:#333}
+    .wall{background:#111}
+    .player{background:#ff4081}
+    .exit{background:var(--green)}
+    .dirpad{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .dirpad button{padding:10px 14px;border-radius:10px}
+
+    /* Stage7 toast */
+    .toast{position:absolute;top:12%;left:50%;transform:translateX(-50%);
+      padding:8px 16px;border-radius:999px;background:rgba(0,0,0,.45);color:#fff;font-weight:600;backdrop-filter:blur(4px);
+      opacity:0;transition:opacity .35s, transform .35s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    /* Finale */
+    #final-msg{font-size:2.4em;color:var(--pink2);font-weight:800;animation:glow 2s infinite alternate}
+    @keyframes glow{from{text-shadow:0 0 8px #ff80ab}to{text-shadow:0 0 26px #c2185b}}
+    #final-photo{width:260px;border-radius:14px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
   </style>
 </head>
 <body>
-  <!-- 开场 -->
-  <div id="stage1">
-    <h1>🎂 沈雨坪，今天是你的特别的一天 🎂</h1>
-    <p>点中正确的小心心才能继续哦 💖</p>
+  <!-- 音乐（静音开播，首次交互取消静音） -->
+  <audio id="bg-music" autoplay loop muted>
+    <source src="https://raw.githubusercontent.com/zhao-rgb/birthday-for-yuping/main/music.mp3" type="audio/mpeg" />
+  </audio>
+
+  <!-- 星空背景 -->
+  <canvas id="bg"></canvas>
+
+  <!-- Stage1 -->
+  <div id="stage1" class="stage">
+    <h1>🎂 沈雨坪，今天是你的冒险生日之旅！</h1>
+    <p>点中真正那颗「真心」才能继续 💖</p>
     <div id="hearts"></div>
   </div>
 
-  <!-- 答题 -->
-  <div id="stage2" class="hidden">
-    <h2>第二关：答对问题才有惊喜！</h2>
-    <div id="question"></div>
-    <div id="answers"></div>
+  <!-- Stage2 -->
+  <div id="stage2" class="stage hidden">
+    <h2>第二关：接住 10 个礼物 🎁（小心炸弹！）</h2>
+    <div class="timer-wrap"><div class="timer-bar" id="timer"></div></div>
+    <p id="score">0 / 10</p>
+    <div id="basket">篮子</div>
+    <p class="mobile-hint">👉 手机可拖动手指移动篮子</p>
+    <button class="retry" onclick="restartCatch()">再试一次</button>
   </div>
 
-  <!-- 刮刮卡 -->
-  <div id="stage3" class="hidden">
-    <h2>刮开惊喜卡片 🎁</h2>
-    <canvas id="scratch" width="300" height="150"></canvas>
-    <div style="margin-top:20px;font-size:1.5em;color:#880e4f;font-weight:bold;">
-      沈雨坪，我爱你 ❤️
+  <!-- Stage3 -->
+  <div id="stage3" class="stage hidden">
+    <h2>第三关：拼出专属合照 🧩</h2>
+    <div id="puzzle"></div>
+    <div class="success-text" id="puzzle-ok">完成啦！</div>
+  </div>
+
+  <!-- Stage4 -->
+  <div id="stage4" class="stage hidden">
+    <h2>第四关：躲避流星雨 🚀</h2>
+    <div id="asteroid-area"><div id="ship">🛸</div></div>
+    <p id="asteroid-msg"></p>
+  </div>
+
+  <!-- Stage5 -->
+  <div id="stage5" class="stage hidden">
+    <h2>第五关：打碎砖块，解锁惊喜 🧱 <span class="badge">小球不可丢！</span></h2>
+    <div id="breakout-wrap"><canvas id="breakout" width="300" height="400"></canvas></div>
+  </div>
+
+  <!-- Stage6 -->
+  <div id="stage6" class="stage hidden">
+    <h2>第六关：穿越迷宫找到出口 🌀</h2>
+    <div id="maze-wrap">
+      <div id="maze-grid"></div>
+      <div class="dirpad">
+        <button onclick="move(0,-1)">⬆️</button>
+        <button onclick="move(-1,0)">⬅️</button>
+        <button onclick="move(1,0)">➡️</button>
+        <button onclick="move(0,1)">⬇️</button>
+      </div>
     </div>
+  </div>
+
+  <!-- Stage7 -->
+  <div id="stage7" class="stage hidden">
+    <h2>第七关：小考验 ✨</h2>
+    <div id="question"></div>
+    <div id="answers"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <!-- Final -->
+  <div id="final" class="stage hidden">
+    <div id="final-msg">🎉 生日快乐，沈雨坪！我爱你 ❤️</div>
+    <img id="final-photo" src="https://kkkksslls.oss-cn-beijing.aliyuncs.com/syp/20250702-151707.jpg">
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    // ========== 第一关：点击心 ==========
-    const heartsContainer = document.getElementById("hearts");
-    for (let i=0; i<10; i++) {
-      let heart = document.createElement("div");
-      heart.innerHTML = "💖";
-      heart.classList.add("heart");
-      heart.style.left = Math.random()*80 + "%";
-      heart.style.top = Math.random()*80 + "%";
-      heartsContainer.appendChild(heart);
+    /* 星空背景 */
+    const bg=document.getElementById('bg'),ctx=bg.getContext('2d');
+    function fit(){bg.width=innerWidth;bg.height=innerHeight} fit(); addEventListener('resize',fit);
+    const stars=Array.from({length:120}).map(()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.5,vx:(Math.random()-.5)*.05}));
+    (function loop(){ctx.clearRect(0,0,bg.width,bg.height);ctx.fillStyle='#fff';stars.forEach(s=>{ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();s.y+=.2;s.x+=s.vx;if(s.y>bg.height) s.y=0;if(s.x>bg.width) s.x=0;if(s.x<0) s.x=bg.width});requestAnimationFrame(loop)})();
 
-      heart.onclick = () => {
-        if (i === 3) { // 假设第4颗才是正确的
-          document.getElementById("stage1").classList.add("hidden");
-          document.getElementById("stage2").classList.remove("hidden");
-          loadQuestion();
-        } else {
-          alert("不是这颗心哦，再试试~");
-        }
-      }
+    /* 音乐解锁 */
+    const music=document.getElementById('bg-music');
+    function enableMusic(){music.muted=false;if(music.paused)music.play().catch(()=>{});}
+    addEventListener('touchstart',enableMusic,{once:true});
+    addEventListener('click',enableMusic,{once:true});
+
+    /* Stage1 */
+    const hearts=document.getElementById('hearts');let correct=Math.floor(Math.random()*8);
+    for(let i=0;i<8;i++){let h=document.createElement('div');h.innerHTML="💖";h.className="heart";h.style.left=Math.random()*80+"%";h.style.top=Math.random()*80+"%";hearts.appendChild(h);h.onclick=()=>{if(i===correct){stage1.classList.add('hidden');stage2.classList.remove('hidden');startCatch()}else alert("假心心哦～");};}
+
+    /* Stage2 */
+    let caught=0,timerW=100,dropper,timerInt;
+    function startCatch(){caught=0;score.innerText="0 / 10";timerW=100;timer.style.width="100%";
+      const basket=document.getElementById('basket');let bx=innerWidth/2-60;basket.style.left=bx+"px";
+      document.onmousemove=e=>{bx=e.clientX-60;basket.style.left=bx+"px";}
+      document.ontouchmove=e=>{bx=e.touches[0].clientX-60;basket.style.left=bx+"px";}
+      function drop(){let g=document.createElement('div');g.innerHTML=Math.random()>.2?"🎁":"💣";g.className='gift';g.style.left=Math.random()*(innerWidth-30)+"px";g.style.top="0px";stage2.appendChild(g);
+        let fall=setInterval(()=>{let y=parseInt(g.style.top);g.style.top=(y+5)+"px";let gy=parseInt(g.style.top),gx=g.offsetLeft;if(gy>innerHeight-100&&gx>bx&&gx<bx+120){if(g.innerHTML==="🎁"){caught++}else caught=Math.max(0,caught-1);score.innerText=caught+" / 10";g.remove();clearInterval(fall);if(caught>=10){clearInterval(dropper);clearInterval(timerInt);stage2.classList.add('hidden');stage3.classList.remove('hidden');startPuzzle();}}if(gy>innerHeight){g.remove();clearInterval(fall);}},30);}
+      dropper=setInterval(drop,900);
+      timerInt=setInterval(()=>{timerW-=.5;timer.style.width=timerW+"%";if(timerW<=0){clearInterval(dropper);clearInterval(timerInt);document.querySelector('.retry').style.display='block'}},200);
     }
+    function restartCatch(){document.querySelector('.retry').style.display='none';startCatch()}
 
-    // ========== 第二关：答题 ==========
-    const questions = [
-      {q:"我们第一次见面是在哪里？", a:["图书馆","食堂","操场"], correct:0},
-      {q:"你最喜欢的甜品是？", a:["蛋糕","冰淇淋","巧克力"], correct:1}
-    ];
-    let currentQ = 0;
+    /* Stage3 */
+    const puzzle=document.getElementById('puzzle');let first=null;
+    function startPuzzle(){puzzle.innerHTML="";let arr=[0,1,2,3,4,5,6,7,8];arr.sort(()=>Math.random()-.5);
+      arr.forEach(i=>{let p=document.createElement('div');p.className='p-piece';p.style.background=`url('https://kkkksslls.oss-cn-beijing.aliyuncs.com/syp/20250702-151707.jpg') -${(i%3)*100}px -${Math.floor(i/3)*100}px`;p.dataset.index=i;p.onclick=()=>swap(p);puzzle.appendChild(p);});}
+    function swap(p){if(!first){first=p;p.style.outline="2px solid yellow"}else{[p.style.background,first.style.background]=[first.style.background,p.style.background];[p.dataset.index,first.dataset.index]=[first.dataset.index,p.dataset.index];first.style.outline="";first=null;checkPuzzle();}}
+    function checkPuzzle(){let ok=true;Array.from(puzzle.children).forEach((p,i)=>{if(p.dataset.index!=i)ok=false});if(ok){puzzleOk.classList.add('show');setTimeout(()=>{stage3.classList.add('hidden');stage4.classList.remove('hidden');startAsteroid()},1000)}}
 
-    function loadQuestion() {
-      const q = questions[currentQ];
-      document.getElementById("question").innerText = q.q;
-      const answersDiv = document.getElementById("answers");
-      answersDiv.innerHTML = "";
-      q.a.forEach((ans,idx)=>{
-        let btn = document.createElement("button");
-        btn.innerText = ans;
-        btn.onclick = ()=>checkAnswer(idx);
-        answersDiv.appendChild(btn);
-      });
-    }
-
-    function checkAnswer(idx) {
-      if (idx === questions[currentQ].correct) {
-        if (currentQ < questions.length-1) {
-          currentQ++;
-          loadQuestion();
-        } else {
-          document.getElementById("stage2").classList.add("hidden");
-          document.getElementById("stage3").classList.remove("hidden");
-          initScratch();
-        }
-      } else {
-        alert("答错啦，再想想~");
-      }
-    }
-
-    // ========== 第三关：刮刮卡 ==========
-    function initScratch() {
-      const canvas = document.getElementById("scratch");
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#e91e63";
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.globalCompositeOperation="destination-out";
-
-      let scratching=false;
-      canvas.addEventListener("mousedown",()=>scratching=true);
-      canvas.addEventListener("mouseup",()=>scratching=false);
-      canvas.addEventListener("mousemove",e=>{
-        if(!scratching)return;
-        ctx.beginPath();
-        ctx.arc(e.offsetX,e.offsetY,20,0,Math.PI*2);
-        ctx.fill();
-      });
-
-      // 最终彩带爆炸
-      setTimeout(()=>{
-        confetti({particleCount:300,spread:150,origin:{y:0.7}});
-      },2000);
-    }
+    /* Stage4 */
+    function startAsteroid(){const area=document.getElementById('asteroid-area'),ship=document.getElementById('ship');let sx=200,sy=400;ship.style.left=sx+'px';ship.style.top=sy+'px';let playing=true;
+      function move(e){if(!playing)return;const step=18;if(e.key==="ArrowLeft")sx-=step;if(e.key==="ArrowRight")sx+=step;if(e.key==="ArrowUp")sy-=step;if(e.key==="ArrowDown")sy+=step;ship.style.left=Math.max(0,Math.min(area.clientWidth-30,sx))+'px';ship.style.top=Math.max(0,Math.min(area.clientHeight-30,sy))+'px';}
+      document.onkeydown=move;
+      let spawn=setInterval(()=>{let a=document.createElement('div');a.className='asteroid';a.innerHTML='☄️';a.style.left=Math.random()*(area.clientWidth-20)+'px';a.style.top='0px';area.appendChild(a);let fall=setInterval(()=>{let y=parseInt(a.style.top);a.style.top=(y+6)+'px';let ax=a.offsetLeft,ay=parseInt(a.style.top),shx=ship.offsetLeft,shy=ship.offsetTop;if(Math.abs(ax-shx)<26&&Math.abs(ay-shy)<26){asteroidMsg.innerText="撞上啦！";clearInterval(fall);a.remove();playing=false;clearInterval(spawn);setTimeout(()=>{stage4.classList.add('hidden');stage5.classList.remove('hidden');startBreakout()},1200)}if(ay>area.clientHeight){a.remove();clearInterval(fall)}},30)},800);}
+    
+    /* Stage5 */
+    function startBreakout(){const canvas=document.getElementById('breakout'),c=canvas.getContext('2d');let ball={x:150,y:200,dx:2,dy:-2,r:8},paddle={x:120,w:60,h:10},bricks=[];for(let r=0;r<4;r++){for(let col=0;col<5;col++){bricks.push({x:col*60+20,y:r*20+20,w:50,h:10,hit:false})}}
+      function draw(){c.clearRect(0,0,300,400);c.beginPath();c.arc(ball.x,ball.y,ball.r,0,Math.PI*2);c.fillStyle="#ffeb3b";c.fill();c.closePath();c.fillStyle="#fff";c.fillRect(paddle.x,380,paddle.w,paddle.h);bricks.forEach(b=>{if(!b.hit){c.fillStyle="#4caf50";c.fillRect(b.x,b.y,b.w,b.h)}})}
+      function update(){ball.x+=ball.dx;ball.y+=ball.dy;if(ball.x+ball.r>300||ball.x-ball.r<0)ball.dx*=-1;if(ball.y-ball.r<0)ball.dy*=-1;if(ball.y+ball.r>400){stage5.classList.add('hidden');stage6.classList.remove('hidden');startMaze();}if(ball.x>paddle.x&&ball.x<paddle.x+paddle.w&&ball.y+ball.r>380){ball.dy*=-1}bricks.forEach(b=>{if(!b.hit&&ball.x>b.x&&ball.x<b.x+b.w&&ball.y>b.y&&ball.y<b.y+b.h){ball.dy*=-1;b.hit=true;if(bricks.every(b=>b.hit)){stage5.classList.add('hidden');stage6.classList.remove('hidden');startMaze()}}})}
+      function loop(){draw();update();requestAnimationFrame(loop)} loop();
+      document.onmousemove=e=>{let rect=canvas.getBoundingClientRect();paddle.x=e.clientX-rect.left-paddle.w/2}
+      document.ontouchmove=e=>{let rect=canvas.getBoundingClientRect();paddle.x=e.touches[0].clientX-rect.left-paddle.w/2}}
+    
+    /* Stage6 */
+    const mazeData=[[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,1,0,0,0,1],[1,0,1,1,0,1,0,1,0,1],[1,0,1,0,0,0,0,1,0,1],[1,0,1,0,1,1,0,1,0,1],[1,0,0,0,1,0,0,0,0,1],[1,1,1,0,1,0,1,1,0,1],[1,0,0,0,0,0,1,0,0,1],[1,0,1,1,1,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]];
+    let px=1,py=1;
+    function startMaze(){mazeGrid.innerHTML="";mazeData.forEach((row,y)=>{row.forEach((val,x)=>{let cell=document.createElement('div');cell.className='cell';if(val===1)cell.classList.add('wall');if(x===px&&y===py)cell.classList.add('player');if(x===8&&y===8)cell.classList.add('exit');mazeGrid.appendChild(cell)})});mazeGrid.style.gridTemplateColumns="repeat(10,26px)";}
+    function move(dx,dy){let nx=px+dx,ny=py+dy;if(mazeData[ny][nx]===0|| (nx===8&&ny===8)){px=nx;py=ny;startMaze();if(nx===8&&ny===8){stage6.classList.add('hidden');stage7.classList.remove('hidden');loadQuestion();}}}
+    
+    /* Stage7 */
+    const qs=[{q:"我们第一次见面是？",a:["图书馆","操场","公司"],c:0},{q:"你最喜欢的水果是？",a:["草莓","西瓜","芒果"],c:1},{q:"我们第一次牵手是在？",a:["电影院","公交车","电梯"],c:0}];let qi=0;
+    function loadQuestion(){let q=qs[qi];question.innerText=q.q;answers.innerHTML="";q.a.forEach((ans,i)=>{let b=document.createElement('button');b.innerText=ans;b.onclick=()=>checkAns(i);answers.appendChild(b)})}
+    function checkAns(i){if(i===qs[qi].c){showToast("答对啦！");if(qi<qs.length-1){qi++;loadQuestion()}else{stage7.classList.add('hidden');final.classList.remove('hidden');setInterval(()=>confetti({particleCount:80,spread:120,origin:{y:.8}}),600)}}else showToast("再想想哦~")}
+    function showToast(msg){toast.innerText=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1000)}
   </script>
 </body>
 </html>
