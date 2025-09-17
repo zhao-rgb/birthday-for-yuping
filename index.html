@@ -83,11 +83,11 @@
 </head>
 <body>
 <!-- 音乐 -->
-<audio autoplay="autoplay" id="bg-music" loop="" src="music.mp3" style="display:none;">
+<audio autoplay="autoplay" id="bg-music" loop="loop" muted="muted" style="display:none;">
 <source src="https://raw.githubusercontent.com/zhao-rgb/birthday-for-yuping/main/music.mp3" type="audio/mpeg"/>
 </audio>
-<audio autoplay="autoplay" id="s-catch" preload="auto" src="catch.mp3" style="display:none;"></audio>
-<audio autoplay="autoplay" id="s-bomb" preload="auto" src="bomb.mp3" style="display:none;"></audio>
+<audio id="s-catch" preload="auto" src="catch.mp3"></audio>
+<audio id="s-bomb" preload="auto" src="bomb.mp3"></audio>
 <!-- 星空背景 -->
 <canvas id="bg"></canvas>
 <!-- Stage1 找真心 -->
@@ -562,5 +562,15 @@
       -> 6(startMaze) -> 7(loadQuestion) -> 8(finale)
     ================================== */
   </script>
-</body>
+<script>
+const music = document.getElementById("bg-music");
+function unlockAudio() {
+  music.muted = false;
+  music.play().catch(()=>{});
+  document.removeEventListener("click", unlockAudio);
+  document.removeEventListener("touchstart", unlockAudio);
+}
+document.addEventListener("click", unlockAudio);
+document.addEventListener("touchstart", unlockAudio);
+</script></body>
 </html>
